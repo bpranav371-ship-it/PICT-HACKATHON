@@ -10,14 +10,16 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL = "llama3.2:3b"
 MEMORY_FILE = "memory.json"
 
-
-# ---- MEMORY HELPERS ----
+# -------- MEMORY (SAFE & MINIMAL) --------
 def load_memory():
     if not os.path.exists(MEMORY_FILE):
         return []
-    with open(MEMORY_FILE, "r") as f:
-        return json.load(f)
-
+    try:
+        with open(MEMORY_FILE, "r") as f:
+            content = f.read().strip()
+            return json.loads(content) if content else []
+    except:
+        return []
 
 def save_memory(entry):
     memory = load_memory()
@@ -25,19 +27,32 @@ def save_memory(entry):
     with open(MEMORY_FILE, "w") as f:
         json.dump(memory, f, indent=2)
 
-
 def find_similar(profile_text):
     memory = load_memory()
     for item in memory:
-        if item["industry"].lower() in profile_text.lower():
+        if item.get("industry", "").lower() in profile_text.lower():
             return item
     return None
 
+# -------- SCORE --------
+def score_message(message):
+    prompt = f"""
+Score the following outreach message from 0 to 100.
+Return ONLY a number.
 
-@app.get("/")
-def home():
-    return {"status": "Backend running 🚀"}
-
+Message:
+{message}
+"""
+    try:
+        res = requests.post(
+            OLLAMA_URL,
+            json={"model": MODEL, "prompt": prompt, "stream": False},
+            timeout=60
+        )
+        digits = "".join(filter(str.isdigit, res.json().get("response", "")))
+        return int(digits[:3]) if digits else 50
+    except:
+        return 50
 
 @app.post("/generate")
 def generate(payload: dict):
@@ -45,8 +60,7 @@ def generate(payload: dict):
     channel = payload.get("channel", "email")
     tone = payload.get("tone", "Formal")
 
-    # 🔹 VERY SIMPLE inference (hackathon-friendly)
-    industry = "AI / Tech" if "ml" in profile_text.lower() or "ai" in profile_text.lower() else "General"
+    industry = "AI / Tech" if any(k in profile_text.lower() for k in ["ml", "ai", "data"]) else "General"
     role = "Student" if "student" in profile_text.lower() else "Professional"
 
     similar = find_similar(profile_text)
@@ -58,57 +72,61 @@ def generate(payload: dict):
     }
 
     tone_rule = (
-        "Use a professional tone."
+        "Use a professional, polite tone."
         if tone == "Formal"
-        else "Use a casual, friendly tone."
+        else "Use a casual, friendly, conversational tone."
     )
 
     memory_hint = ""
     if similar:
-        memory_hint = f"""
-You may naturally reference that we recently interacted with someone in a similar role or industry.
+        memory_hint = """
+Include ONE natural line implying recent conversations with similar professionals,
+without naming anyone.
 """
 
     prompt = f"""
-You are an AI that writes highly personalized cold outreach messages.
+You are an expert cold outreach writer.
 
-Profile Information:
+TASK:
+Return ONLY the final message text.
+No explanations. No headings. No analysis.
+
+Profile:
 {profile_text}
 
 Inferred:
 - Role: {role}
 - Industry: {industry}
 
-Instructions:
+Rules:
 - {channel_rules[channel]}
 - {tone_rule}
-- Do not sound generic
-- Do not mention AI
+- Highly personalized
+- Human and natural
+- No AI mention
 - End with a soft CTA
 {memory_hint}
-
-Write the message now.
 """
 
-    data = {
-        "model": MODEL,
-        "prompt": prompt,
-        "stream": False
-    }
+    res = requests.post(
+        OLLAMA_URL,
+        json={"model": MODEL, "prompt": prompt, "stream": False},
+        timeout=120
+    )
 
-    response = requests.post(OLLAMA_URL, json=data)
-    result = response.json()
-    final_text = result.get("response", "")
+    final_text = res.json().get("response", "").strip()
+    reply_score = score_message(final_text)
 
-    # 🔹 SAVE TO MEMORY
+    # ✅ STORE ONLY ABSTRACT MEMORY
     save_memory({
         "timestamp": str(datetime.now()),
         "role": role,
         "industry": industry,
-        "profile_summary": profile_text[:200],
         "channel": channel,
-        "tone": tone,
-        "message": final_text
+        "tone": tone
     })
 
-    return {"response": final_text}
+    return {
+        "response": final_text,
+        "reply_score": reply_score
+    }
