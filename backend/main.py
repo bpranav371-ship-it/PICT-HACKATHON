@@ -34,7 +34,7 @@ def find_similar(profile_text):
             return item
     return None
 
-# -------- SCORE --------
+# -------- REPLY SCORE --------
 def score_message(message):
     prompt = f"""
 Score the following outreach message from 0 to 100.
@@ -59,6 +59,7 @@ def generate(payload: dict):
     profile_text = payload.get("profile_text", "")
     channel = payload.get("channel", "email")
     tone = payload.get("tone", "Formal")
+    language = payload.get("language", "English")
 
     industry = "AI / Tech" if any(k in profile_text.lower() for k in ["ml", "ai", "data"]) else "General"
     role = "Student" if "student" in profile_text.lower() else "Professional"
@@ -67,8 +68,8 @@ def generate(payload: dict):
 
     channel_rules = {
         "email": "Write a professional cold outreach email (100–120 words).",
-        "linkedin": "Write a short LinkedIn DM (40–60 words).",
-        "whatsapp": "Write a concise WhatsApp message (25–35 words)."
+        "linkedin": "Write a LinkedIn DM (40–60 words).",
+        "whatsapp": "Write a WhatsApp message (25–35 words)."
     }
 
     tone_rule = (
@@ -77,19 +78,31 @@ def generate(payload: dict):
         else "Use a casual, friendly, conversational tone."
     )
 
+    # 🔒 HARD LANGUAGE LOCK (THIS FIXES YOUR ISSUE)
+    language_rule = {
+        "English": "Write the ENTIRE message strictly in English only.",
+        "Hindi": "Write the ENTIRE message strictly in Hindi using Devanagari script only.",
+        "Hinglish": (
+            "Write the ENTIRE message strictly in Hinglish "
+            "(English + simple Hindi words in Roman script). "
+            "DO NOT write pure English."
+        )
+    }[language]
+
     memory_hint = ""
     if similar:
         memory_hint = """
-Include ONE natural line implying recent conversations with similar professionals,
-without naming anyone.
+Include exactly ONE natural line implying recent conversations with similar professionals.
 """
 
     prompt = f"""
-You are an expert cold outreach writer.
+SYSTEM RULES (NON-NEGOTIABLE):
+- {language_rule}
+- If any sentence violates the language rule, REWRITE the full message correctly.
+- Do NOT mix other languages.
 
 TASK:
 Return ONLY the final message text.
-No explanations. No headings. No analysis.
 
 Profile:
 {profile_text}
@@ -117,7 +130,7 @@ Rules:
     final_text = res.json().get("response", "").strip()
     reply_score = score_message(final_text)
 
-    # ✅ STORE ONLY ABSTRACT MEMORY
+    # Store abstract memory only
     save_memory({
         "timestamp": str(datetime.now()),
         "role": role,
