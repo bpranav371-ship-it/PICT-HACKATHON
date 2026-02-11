@@ -1,20 +1,36 @@
-# Python
+# --- Python ---
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.log
 
-# Virtual environment
+# --- Virtual Environment ---
 venv/
 .env/
+env/
 
-# Local storage
+# --- Node.js / Frontend (CRITICAL) ---
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+.output/
+.nuxt/
+
+# --- Local Storage / Secrets ---
 memory.json
+.env
+.env.local
 
-# OS
+# --- Large Files / Zip Archives ---
+*.zip
+*.tar.gz
+*.rar
+
+# --- OS & IDE ---
 .DS_Store
 Thumbs.db
-
-# IDE
 .vscode/
 .idea/
