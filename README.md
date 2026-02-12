@@ -109,7 +109,7 @@ An **offline-first outreach engine** that:
 <td width="50%">
 
 ### 🚀 Demo-Ready
-- ✅ **Streamlit UI** - Clean, intuitive interface
+- ✅ **Ueser Interface** - Clean, intuitive interface
 - ✅ **Side-by-Side Compare** - Visual tone comparison
 - ✅ **Live Generation** - Real-time message creation
 - ✅ **Export Options** - Copy-paste ready outputs
@@ -132,7 +132,7 @@ An **offline-first outreach engine** that:
 ## 🧩 System Architecture
 ```mermaid
 graph TD
-    A[👤 User Input] -->|Profile Text| B[🖥️ Streamlit Frontend]
+    A[👤 User Input] -->|Profile Text| B[🖥️ Frontend]
     B -->|HTTP Request| C[⚙️ FastAPI Backend]
     
     C -->|1. Parse Profile| D{Profile Parser}
@@ -164,7 +164,7 @@ graph TD
 ┌─────────────────────────────────────────────────────────────┐
 │                     PRESENTATION LAYER                      │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │          Streamlit UI (app.py)                        │  │
+│  │            User Interface (app.py)                    │  │
 │  │  - Profile input                                      │  │
 │  │  - Side-by-side comparison                            │  │
 │  │  - Export functionality                               │  │
@@ -479,7 +479,7 @@ def calculate_reply_score(message, profile):
 ### Workflow Diagram
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   STREAMLIT INTERFACE                       │
+│                      USER INTERFACE                         │
 │                                                             │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  Step 1: Paste Profile Text                          │  │
@@ -533,7 +533,7 @@ def calculate_reply_score(message, profile):
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Frontend** | ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white) | Interactive web interface |
+| **Frontend** | ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=white) | Interactive web interface |
 | **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white) | REST API server |
 | **LLM** | ![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white) | Local LLM runtime |
 | **Model** | ![LLaMA](https://img.shields.io/badge/LLaMA_3.2_3B-8A2BE2?style=flat) | Language model |
@@ -545,7 +545,6 @@ def calculate_reply_score(message, profile):
 ### Dependencies
 ```python
 # requirements.txt
-streamlit>=1.28.0
 fastapi>=0.104.0
 uvicorn>=0.24.0
 ollama>=0.1.0
@@ -631,8 +630,9 @@ ollama serve
 # Terminal 2: Start FastAPI backend
 uvicorn main:app --reload --port 8000
 
-# Terminal 3: Start Streamlit frontend
-streamlit run app.py
+# Terminal 3: Start frontend
+npm install 
+npm run dev
 ```
 
 #### 6️⃣ Access the Application
@@ -841,7 +841,7 @@ Phase 3 (Future) 📋
 
 ### Main Interface
 ```
-[Screenshot placeholder: Streamlit UI with profile input and generate button]
+[Screenshot placeholder: UI with profile input and generate button]
 ```
 
 ### Side-by-Side Comparison
