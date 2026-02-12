@@ -109,7 +109,7 @@ An **offline-first outreach engine** that:
 <td width="50%">
 
 ### 🚀 Demo-Ready
-- ✅ **Streamlit UI** - Clean, intuitive interface
+- ✅ **React Glass UI** - Clean, intuitive interface
 - ✅ **Side-by-Side Compare** - Visual tone comparison
 - ✅ **Live Generation** - Real-time message creation
 - ✅ **Export Options** - Copy-paste ready outputs
@@ -132,31 +132,27 @@ An **offline-first outreach engine** that:
 ## 🧩 System Architecture
 ```mermaid
 graph TD
-    A[👤 User Input] -->|Profile Text| B[🖥️ Streamlit Frontend]
-    B -->|HTTP Request| C[⚙️ FastAPI Backend]
+    A[User Input] -->|Profile Text| B[React Frontend Vite]
+    B -->|1. Stream Request SSE| C[FastAPI Backend]
     
-    C -->|1. Parse Profile| D{Profile Parser}
-    D -->|Extract| E[Role/Industry/Skills]
+    C -->|2. Parse Metadata| D{Logic Engine}
+    D -->|Search Patterns| F[(Local Memory JSON)]
+    F -->|Context Injection| G[Knowledge Reuse]
     
-    C -->|2. Check Memory| F[(Local Memorymemory.json)]
-    F -->|Similar Profiles?| G{Knowledge Reuse}
+    G -->|3. Construct Prompt| H[Prompt Engineer]
     
-    C -->|3. Generate Prompts| H[Prompt Engineer]
-    H -->|Channel + Tone| I[Multi-Variant Prompts]
+    H -->|4. Trigger Offline LLM| J[Ollama - Llama 3.2]
+    J -->|Neural Token Stream| C
+    C -->|5. Real-time Chunks| B
     
-    I -->|4. LLM Call| J[🤖 Ollama LLMllama3.2:3b]
-    J -->|Generated Text| K[Message Variants]
-    
-    K -->|5. Score & Format| L[Reply Scorer]
-    L -->|Final Output| B
-    
-    C -->|6. Store Metadata| F
-    
-    style A fill:#e1f5ff
-    style J fill:#fff4e1
-    style F fill:#f0f0f0
-    style B fill:#e8f5e9
-    style L fill:#fce4ec
+    C -->|6. Self-Reflection| L[Reply Scorer]
+    L -->|Hidden Score Tag| B
+
+    style A fill:#e1f5ff,stroke:#007acc
+    style J fill:#fff4e1,stroke:#d4a017
+    style F fill:#f0f0f0,stroke:#333
+    style B fill:#e8f5e9,stroke:#2e7d32
+    style L fill:#fce4ec,stroke:#c2185b
 ```
 
 ### Architecture Highlights
@@ -164,45 +160,42 @@ graph TD
 ┌─────────────────────────────────────────────────────────────┐
 │                     PRESENTATION LAYER                      │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │          Streamlit UI (app.py)                        │  │
-│  │  - Profile input                                      │  │
-│  │  - Side-by-side comparison                            │  │
-│  │  - Export functionality                               │  │
+│  │              React Frontend (Vite + TS)               │  │
+│  │  - Glassmorphic UI (Tailwind + Framer)                │  │
+│  │  - Real-time Typewriter Rendering                     │  │
+│  │  - Stream Parsing (||SCORE:|| separation)             │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
-                            ↕ HTTP/REST
+                            ↕ Server-Sent Events (SSE)
 ┌─────────────────────────────────────────────────────────────┐
-│                      BUSINESS LOGIC LAYER                   │
+│                    BUSINESS LOGIC LAYER                     │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │          FastAPI Backend (main.py)                    │  │
-│  │  ┌─────────────────┐  ┌──────────────────┐           │  │
-│  │  │ Profile Parser  │  │ Prompt Engineer  │           │  │
-│  │  └─────────────────┘  └──────────────────┘           │  │
-│  │  ┌─────────────────┐  ┌──────────────────┐           │  │
-│  │  │ Knowledge Reuse │  │  Reply Scorer    │           │  │
-│  │  └─────────────────┘  └──────────────────┘           │  │
+│  │              FastAPI Backend (main.py)                │  │
+│  │  ┌─────────────────┐  ┌──────────────────┐            │  │
+│  │  │ StreamingEngine │  │ Context Injector │            │  │
+│  │  └─────────────────┘  └──────────────────┘            │  │
+│  │  ┌─────────────────┐  ┌──────────────────┐            │  │
+│  │  │  Memory JSON    │  │   Reply Scorer   │            │  │
+│  │  └─────────────────┘  └──────────────────┘            │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
-                            ↕ Local API
+                            ↕ Local Network (Loopback)
 ┌─────────────────────────────────────────────────────────────┐
 │                         LLM LAYER                           │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │            Ollama Server                              │  │
-│  │       (llama3.2:3b - Fully Offline)                   │  │
-│  │  - Text generation                                    │  │
-│  │  - Tone adaptation                                    │  │
-│  │  - Context-aware responses                            │  │
+│  │               Ollama Inference Server                 │  │
+│  │        (llama3.2:3b - Fully Offline Runtime)          │  │
+│  │  - Token Streaming                                    │  │
+│  │  - Zero-Latency Handoff                               │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                             ↕ File I/O
 ┌─────────────────────────────────────────────────────────────┐
-│                      PERSISTENCE LAYER                      │
+│                    PERSISTENCE LAYER                        │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │         Local Memory Store (memory.json)              │  │
+│  │        Local Memory Store (memory.json)               │  │
 │  │  {                                                    │  │
-│  │    "timestamp": "2026-02-06 18:17:18",                │  │
 │  │    "role": "Software Engineer",                       │  │
-│  │    "industry": "AI/Tech",                             │  │
 │  │    "channel": "email",                                │  │
 │  │    "tone": "formal"                                   │  │
 │  │  }                                                    │  │
@@ -479,46 +472,43 @@ def calculate_reply_score(message, profile):
 ### Workflow Diagram
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   STREAMLIT INTERFACE                       │
+│                    REACT GLASS INTERFACE                    │
 │                                                             │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  Step 1: Paste Profile Text                          │  │
+│  │  Step 1: Paste Neural Context                         │  │
 │  │  ┌─────────────────────────────────────────────────┐  │  │
-│  │  │ Paste LinkedIn/Twitter profile or write brief  │  │  │
-│  │  │ description of the person you want to reach    │  │  │
+│  │  │ Paste LinkedIn Bio, Twitter feed, or raw        │  │  │
+│  │  │ profile text into the Glass Input Container.    │  │  │
 │  │  │                                                 │  │  │
-│  │  │ Example: "Senior ML Engineer at OpenAI..."     │  │  │
+│  │  │ Example: "Senior Dev @ Netflix, Loves Rust..."  │  │  │
 │  │  └─────────────────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────┘  │
-│                            ↓                                │
+│                             ↓                               │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  Step 2: Select Options                              │  │
-│  │  Channel: [ Email ▼ ]  Tone: [ Formal ▼ ]           │  │
-│  │          [ Generate Outreach ]                       │  │
+│  │  Step 2: Intelligent Configuration                    │  │
+│  │  Lang: [ Hinglish ▼ ]   Mode: [ Professional ▼ ]      │  │
+│  │           [ 🚀 Execute Neural Generation ]            │  │
 │  └───────────────────────────────────────────────────────┘  │
-│                            ↓                                │
+│                             ↓                               │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  Step 3: Side-by-Side Comparison                     │  │
-│  │  ┌─────────────────────┬─────────────────────┐       │  │
-│  │  │   FORMAL TONE       │    CASUAL TONE      │       │  │
-│  │  ├─────────────────────┼─────────────────────┤       │  │
-│  │  │ Subject: ...        │ Subject: ...        │       │  │
-│  │  │                     │                     │       │  │
-│  │  │ Dear [Name],        │ Hey [Name],         │       │  │
-│  │  │ I noticed your...   │ Saw your amazing... │       │  │
-│  │  │                     │                     │       │  │
-│  │  │ [Full message]      │ [Full message]      │       │  │
-│  │  │                     │                     │       │  │
-│  │  │ 📊 Score: 78/100    │ 📊 Score: 72/100    │       │  │
-│  │  │ 📋 [Copy]  [Export] │ 📋 [Copy]  [Export] │       │  │
-│  │  └─────────────────────┴─────────────────────┘       │  │
+│  │  Step 3: Real-Time Neural Streaming                   │  │
+│  │  ┌─────────────────────┬─────────────────────┐        │  │
+│  │  │    EMAIL VARIANT    │   LINKEDIN VARIANT  │        │  │
+│  │  ├─────────────────────┼─────────────────────┤        │  │
+│  │  │ Generating...       │ Generating...       │        │  │
+│  │  │ [Streaming Tokens]  │ [Streaming Tokens]  │        │  │
+│  │  │                     │                     │        │  │
+│  │  │ "Hey Sarvesh, I saw"│ "Sarvesh, let's con"│        │  │
+│  │  │                     │                     │        │  │
+│  │  │ 📊 Score: Calc...   │ 📊 Score: Calc...  │        │  │
+│  │  │ 📋 [Copy]          │ 📋 [Copy]           │        │  │
+│  │  └─────────────────────┴─────────────────────┘        │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                                                             │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │  📊 Knowledge Reuse Indicator                         │  │
-│  │  ✅ Found 3 similar profiles in AI/Tech industry      │  │
-│  │  💡 Applied proven patterns from past successful      │  │
-│  │     outreach                                          │  │
+│  │  📊 Knowledge Reuse & Context Indicator               |  │
+│  │  ✅ Vector match found in memory.json (AI/ML Tier)    │  │
+│  │  💡 Optimizing prompt using proven success patterns   │  │
 │  └───────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -532,26 +522,33 @@ def calculate_reply_score(message, profile):
 ### Core Technologies
 
 | Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Frontend** | ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=flat&logo=streamlit&logoColor=white) | Interactive web interface |
-| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white) | REST API server |
-| **LLM** | ![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white) | Local LLM runtime |
-| **Model** | ![LLaMA](https://img.shields.io/badge/LLaMA_3.2_3B-8A2BE2?style=flat) | Language model |
-| **Language** | ![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=flat&logo=python&logoColor=white) | Primary language |
-| **Storage** | ![JSON](https://img.shields.io/badge/JSON-000000?style=flat&logo=json&logoColor=white) | Local memory store |
+| :--- | :--- | :--- |
+| **Frontend** | ![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB) | High-performance SPA with Framer Motion |
+| **Styling** | ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat&logo=tailwind-css&logoColor=white) | Glassmorphism & Adaptive UI Components |
+| **Backend** | ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white) | Real-time SSE Neural Streaming API |
+| **AI Engine** | ![Ollama](https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white) | Local LLM Runtime Orchestration |
+| **Model** | ![Llama](https://img.shields.io/badge/Llama_3.2-041028?style=flat&logo=meta&logoColor=white) | Privacy-First Text Generation |
+| **Language** | ![Python](https://img.shields.io/badge/Python_3.10+-3776AB?style=flat&logo=python&logoColor=white) | Core Logic & Context Processing |
+| **Storage** | ![JSON](https://img.shields.io/badge/JSON-000000?style=flat&logo=json&logoColor=white) | Local Vector-Pattern Memory Store |
 
 </div>
 
-### Dependencies
-```python
-# requirements.txt
-streamlit>=1.28.0
-fastapi>=0.104.0
-uvicorn>=0.24.0
-ollama>=0.1.0
-pydantic>=2.4.0
-python-multipart>=0.0.6
-```
+# package.json
+
+# UI Framework & Animation
+react>=18.2.0
+framer-motion>=12.0.0
+lenis>=1.1.18
+three>=0.172.0
+
+# Intelligence & Streaming
+typewriter-effect>=2.21.0
+axios>=1.7.0
+
+# Design System
+lucide-react>=0.473.0
+tailwind-merge>=3.0.0
+clsx>=2.1.1
 
 ---
 
@@ -625,21 +622,24 @@ echo '{"outreach_history": []}' > memory.json
 
 #### 5️⃣ Start the Application
 ```bash
-# Terminal 1: Start Ollama (if not already running)
+# Terminal 1: Wake up the local LLM
 ollama serve
 
-# Terminal 2: Start FastAPI backend
+# Terminal 2: Ignite the FastAPI backend
+cd backend
+source venv/bin/activate
 uvicorn main:app --reload --port 8000
 
-# Terminal 3: Start Streamlit frontend
-streamlit run app.py
+# Terminal 3: Launch the React Frontend
+cd frontend
+npm run dev
 ```
 
 #### 6️⃣ Access the Application
 ```
-🌐 Frontend: http://localhost:8501
+🌐 Frontend UI: http://localhost:5173
 🔧 Backend API: http://localhost:8000
-📚 API Docs: http://localhost:8000/docs
+📚 API Documentation: http://localhost:8000/docs
 ```
 
 ---
@@ -727,53 +727,7 @@ curl -X POST "http://localhost:8000/generate" \
 
 ### How This Project Meets SBM02 Requirements
 
-<table>
-<tr>
-<th>Criterion</th>
-<th>Implementation</th>
-<th>Evidence</th>
-</tr>
-<tr>
-<td><b>Offline LLM Usage</b></td>
-<td>✅ Ollama + LLaMA 3.2 3B</td>
-<td>No internet required post-setup</td>
-</tr>
-<tr>
-<td><b>Personalization</b></td>
-<td>✅ Profile parsing + dynamic prompts</td>
-<td>Role, industry, interests extracted</td>
-</tr>
-<tr>
-<td><b>Multi-Channel</b></td>
-<td>✅ Email, LinkedIn, WhatsApp</td>
-<td>Different formats for each channel</td>
-</tr>
-<tr>
-<td><b>Tone Adaptation</b></td>
-<td>✅ Formal vs Casual variants</td>
-<td>Side-by-side comparison in UI</td>
-</tr>
-<tr>
-<td><b>Knowledge Reuse</b></td>
-<td>✅ JSON-based memory system</td>
-<td>References similar past profiles</td>
-</tr>
-<tr>
-<td><b>Scoring Mechanism</b></td>
-<td>✅ Reply likelihood 0-100</td>
-<td>LLM-based quality assessment</td>
-</tr>
-<tr>
-<td><b>Demo Quality</b></td>
-<td>✅ Streamlit UI</td>
-<td>Clean, intuitive interface</td>
-</tr>
-<tr>
-<td><b>Privacy</b></td>
-<td>✅ Local processing only</td>
-<td>No external API dependencies</td>
-</tr>
-</table>
+<table> <tr> <th>Criterion</th> <th>Implementation</th> <th>Evidence</th> </tr> <tr> <td><b>Offline LLM Usage</b></td> <td>✅ Ollama + LLaMA 3.2 (3B)</td> <td>Fully air-gapped; zero external network egress post-setup.</td> </tr> <tr> <td><b>Personalization</b></td> <td>✅ Dynamic Prompt Engineering</td> <td>Context-aware extraction of role, industry, and niche interests.</td> </tr> <tr> <td><b>Multi-Channel</b></td> <td>✅ Adaptive Formatting Engine</td> <td>Context-specific outputs for Email (SMTP), LinkedIn, and WhatsApp.</td> </tr> <tr> <td><b>Tone Adaptation</b></td> <td>✅ Dual-Mode Neural Generation</td> <td>Formal vs. Casual variants with side-by-side UI comparison.</td> </tr> <tr> <td><b>Knowledge Reuse</b></td> <td>✅ Local JSON Vector-Pattern Store</td> <td>Uses <code>memory.json</code> to inject successful past patterns into prompts.</td> </tr> <tr> <td><b>Scoring Mechanism</b></td> <td>✅ Self-Reflection Agent (0-100)</td> <td>LLM-driven probability scoring for reply likelihood.</td> </tr> <tr> <td><b>Demo Quality</b></td> <td>✅ React + SSE Streaming UI</td> <td>High-fidelity Glassmorphic UI with token-by-token streaming.</td> </tr> <tr> <td><b>Privacy</b></td> <td>✅ Localhost Handoff Logic</td> <td>All data stays on MacOS local storage; inherently GDPR compliant.</td> </tr> </table>
 
 ### Innovation Highlights
 ```
@@ -805,67 +759,63 @@ curl -X POST "http://localhost:8000/generate" \
 ### Roadmap
 ```
 Phase 1 (Current) ✅
-├── Offline LLM integration
-├── Multi-channel generation
-├── Basic knowledge reuse
-└── Streamlit UI
+├── Offline Llama 3.2 (3B) Neural Engine
+├── FastAPI Real-time SSE Token Streaming
+├── React Glassmorphic UI & Smooth Motion
+├── Multi-lingual Neural Support (English + Hindi + Hinglish)
+└── Local JSON-based Knowledge Reuse
 
 Phase 2 (Next Sprint) 🔨
-├── Multi-language support (English + Hinglish)
-├── CSV bulk outreach processing
-├── Advanced scoring heuristics
-└── Message A/B testing framework
+├── Chrome Extension (Direct LinkedIn Integration)
+├── CSV Batch Processing Engine for Bulk Outreach
+├── Advanced A/B Testing & Response Heuristics
+└── Local Vector DB (ChromaDB/FAISS) for Semantic Memory
 
 Phase 3 (Future) 📋
-├── Simulated reply conversations
-├── Industry-specific templates
-├── Browser extension
-├── CRM integrations (local)
-└── Analytics dashboard
+├── Multi-Modal Support (Image/Audio Outreach Analysis)
+├── Private Local CRM & Interaction Analytics
+├── WASM-based Edge Inference for Browser-only Mode
+└── Voice-to-Outreach (Local Whisper Integration)
 ```
 
-### Planned Features
+### 📋 Planned Features
 
 | Feature | Description | Priority |
-|---------|-------------|----------|
-| **Multi-Language** | English + Hinglish support | High |
-| **Bulk Processing** | CSV import for mass outreach | High |
-| **A/B Testing** | Compare message variants | Medium |
-| **Reply Simulation** | Practice conversation flows | Medium |
-| **Industry Templates** | Pre-trained patterns per sector | Low |
-| **Chrome Extension** | Generate from LinkedIn directly | Low |
+| :--- | :--- | :--- |
+| **Bulk Processing** | Local CSV/JSON engine for high-volume offline outreach batches. | **High** |
+| **Chrome Extension** | Scrape & Generate directly from the LinkedIn DOM without context-switching. | **High** |
+| **SSE Optimization** | Concurrent multi-model streaming for near-instant side-by-side variants. | **High** |
+| **Vector Memory** | Transitioning from `memory.json` to a local ChromaDB instance for semantic search. | **Medium** |
+| **A/B Testing** | Comparison dashboard to track response rate heuristics and tone effectiveness. | **Medium** |
+| **Reply Simulation** | Practice handling objections with a local "Prospect Agent" simulator. | **Low** |
+| **Local CRM** | An air-gapped, SQLite-based database to track sent messages and follow-up cycles. | **Low** |
 
----
-
-## 📸 Demo Screenshots
+## 📸 System Showcase
 
 ### Main Interface
-```
-[Screenshot placeholder: Streamlit UI with profile input and generate button]
-```
+*Glassmorphic Neural UI with intelligent input parsing.*
+![Main Interface](./assets/main-interface.png)
 
 ### Side-by-Side Comparison
-```
-[Screenshot placeholder: Formal vs Casual message comparison with scores]
-```
+*Real-time token streaming of Formal vs. Casual variants with Reply Probability scoring.*
+![Side-by-Side Comparison](./assets/comparison.png)
 
 ### Knowledge Reuse Indicator
-```
-[Screenshot placeholder: Memory match notification showing similar profiles]
-```
-
----
+*On-device pattern matching triggering the local history optimization toast.*
+![Knowledge Reuse Indicator](./assets/knowledge-reuse.png)
 
 ## 📞 Contact & Support
 
 <div align="center">
 
-**Built for [Hackathon Name] - SBM02 Challenge**
+**Built for XENIA - SBM02 Challenge**
 
 For questions or demo requests:  
-📧 Email: your.email@example.com  
-🔗 LinkedIn: [Your Profile]  
-🐙 GitHub: [@yourusername]
+📧 Email : sarvesh.bijawe24@vit.edu  
+🔗 LinkedIn : [www.linkedin.com/in/sarvesh-bijawe](https://www.linkedin.com/public-profile/settings/?trk=d_flagship3_profile_self_view_public_profile&lipi=urn%3Ali%3Apage%3Ad_flagship3_profile_view_base%3BlBGNudgtQZaaxbr0wYZecA%3D%3D)
+
+
+🐙 GitHub : https://github.com/Sarvesh5273
 
 ---
 

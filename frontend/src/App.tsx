@@ -1,9 +1,138 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BackgroundPaths } from './components/ui/background-paths';
-import SmoothScroll from './components/SmoothScroll';
-import Typewriter from 'typewriter-effect';
-import { Copy, Check, Globe, Sparkles, Loader2, ArrowDown, Terminal, BrainCircuit } from 'lucide-react';
+import { 
+  Copy, 
+  Check, 
+  Globe, 
+  Sparkles, 
+  Loader2, 
+  ArrowDown, 
+  Terminal, 
+  BrainCircuit, 
+  Mail, 
+  Linkedin, 
+  MessageSquare 
+} from 'lucide-react';
+
+const Typewriter = ({ strings, delay = 40, deleteSpeed = 20 }: { 
+  strings: string[], 
+  delay?: number, 
+  deleteSpeed?: number 
+}) => {
+  const [displayText, setDisplayText] = useState("");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [stringIndex, setStringIndex] = useState(0);
+
+  useEffect(() => {
+    const currentFullString = strings[stringIndex];
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (currentIndex < currentFullString.length) {
+          setDisplayText(currentFullString.substring(0, currentIndex + 1));
+          setCurrentIndex(prev => prev + 1);
+        } else {
+          setTimeout(() => setIsDeleting(true), 1500);
+        }
+      } else {
+        if (currentIndex > 0) {
+          setDisplayText(currentFullString.substring(0, currentIndex - 1));
+          setCurrentIndex(prev => prev - 1);
+        } else {
+          setIsDeleting(false);
+          setStringIndex((prev) => (prev + 1) % strings.length);
+        }
+      }
+    }, isDeleting ? deleteSpeed : delay);
+    return () => clearTimeout(timeout);
+  }, [currentIndex, isDeleting, stringIndex, strings, delay, deleteSpeed]);
+
+  return <span>{displayText}<span className="animate-pulse">|</span></span>;
+};
+
+// ==========================================
+// NEW: DYNAMIC FLOATING NEURAL PATHS
+// ==========================================
+function FloatingNeuralPaths({ position }: { position: 'top' | 'bottom' }) {
+    const isTop = position === 'top';
+    
+    // Generate 18 interwoven paths per section
+    const paths = Array.from({ length: 18 }, (_, i) => {
+        // Safe-zone math: Keeps curves strictly at the top 25% or bottom 25%
+        const startY = isTop ? 5 + (i * 0.8) : 85 + (i * 0.8);
+        const cp1Y   = isTop ? 25 - (i * 1.2) : 100 - (i * 1.2);
+        const cp2Y   = isTop ? -5 + (i * 1.5) : 75 + (i * 1.5);
+        const endY   = isTop ? 15 + (i * 0.5) : 90 + (i * 0.5);
+
+        // Rich, elegant colors (mostly silver/grey, rare hints of emerald/amber)
+        let color = `rgba(255,255,255,${0.1 + (i % 5) * 0.05})`;
+        if (i % 7 === 0) color = `rgba(52, 211, 153, ${0.15 + (i % 3) * 0.05})`; // Emerald hint
+        if (i % 11 === 0) color = `rgba(251, 191, 36, ${0.1 + (i % 3) * 0.05})`; // Amber hint
+
+        return {
+            id: i,
+            d: `M-10 ${startY} C 30 ${cp1Y}, 70 ${cp2Y}, 110 ${endY}`,
+            color: color,
+            width: 0.05 + (i % 4) * 0.03, // Ultra-fine, elegant thicknesses
+            duration: 15 + (i % 8) * 2,   // Pseudo-random duration for organic feel
+            delay: (i % 5) * 0.8          // Pseudo-random delay
+        };
+    });
+
+    return (
+        <div className="absolute inset-0 pointer-events-none">
+            <svg
+                className="w-full h-full opacity-80"
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                fill="none"
+            >
+                {paths.map((path) => (
+                    <motion.path
+                        key={path.id}
+                        d={path.d}
+                        stroke={path.color}
+                        strokeWidth={path.width}
+                        strokeLinecap="round"
+                        initial={{ pathLength: 0.1, opacity: 0.2 }}
+                        animate={{
+                            pathLength: 1,
+                            opacity: [0.2, 0.8, 0.2],
+                            pathOffset: [0, 1, 0],
+                        }}
+                        transition={{
+                            duration: path.duration,
+                            repeat: Number.POSITIVE_INFINITY,
+                            ease: "linear",
+                            delay: path.delay,
+                        }}
+                    />
+                ))}
+            </svg>
+        </div>
+    );
+}
+
+const BackgroundPaths = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => {
+  return (
+    <div className={`relative overflow-hidden ${className}`}>
+      <div className="fixed inset-0 z-0 pointer-events-none bg-[#050505]">
+          <FloatingNeuralPaths position="top" />
+          <FloatingNeuralPaths position="bottom" />
+      </div>
+      {children}
+    </div>
+  );
+};
+// ==========================================
+
+const SmoothScroll = () => {
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => { document.documentElement.style.scrollBehavior = 'auto'; };
+  }, []);
+  return null;
+};
 
 interface ResponseData {
   response: string;
@@ -16,7 +145,7 @@ interface Results {
   };
 }
 
-const App: React.FC = () => {
+export default function App() {
   const [profileText, setProfileText] = useState('');
   const [language, setLanguage] = useState('English');
   const [loading, setLoading] = useState(false);
@@ -34,6 +163,8 @@ const App: React.FC = () => {
     setLoading(true);
     setResults({}); 
     setContextMatch(false);
+    
+    let hasShownMatchInCurrentSession = false;
     
     setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,8 +195,10 @@ const App: React.FC = () => {
             const chunk = decoder.decode(value, { stream: true });
             accumulatedStream += chunk;
 
-            if (accumulatedStream.includes("||CONTEXT:MATCH||")) {
+            if (accumulatedStream.includes("||CONTEXT:MATCH||") && !hasShownMatchInCurrentSession) {
                 setContextMatch(true);
+                hasShownMatchInCurrentSession = true;
+                setTimeout(() => setContextMatch(false), 4000);
             }
 
             const parts = accumulatedStream.split("||SCORE:");
@@ -103,52 +236,76 @@ const App: React.FC = () => {
   };
 
   return (
-    <BackgroundPaths className="font-sans text-white min-h-screen selection:bg-amber-500/30">
+    <BackgroundPaths className="font-sans text-white min-h-screen bg-[#050505] selection:bg-amber-500/30">
       <SmoothScroll />
       
       <div className="relative z-20 flex flex-col items-center w-full">
+        
+        {/* KNOWLEDGE REUSE POP-UP */}
+        <AnimatePresence>
+          {contextMatch && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+              className="fixed top-12 left-1/2 z-[100] w-full max-w-md px-4 pointer-events-none"
+            >
+              <div className="bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-2xl p-5 rounded-[2rem] flex items-center gap-4 shadow-2xl shadow-emerald-500/20 pointer-events-auto">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <BrainCircuit className="text-emerald-400 w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-1">Local Pattern Match Active</h4>
+                  <p className="text-xs text-neutral-300 leading-tight">Optimizing outreach using patterns from your local history. All processing remains on-device.</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* HERO SECTION - SLEEK & BORDERLESS */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center justify-center min-h-screen text-center px-4 relative"
+          className="flex flex-col items-center justify-center min-h-screen w-full px-4 relative"
         >
-          <div className="mb-8 p-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-md animate-pulse">
-            <Terminal className="w-6 h-6 text-emerald-400" />
-          </div>
+          {/* Ambient Glow: Ensures text readability without a hard box */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vw] max-w-3xl h-[400px] bg-emerald-950/20 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-          <h1 className="text-7xl md:text-9xl font-bold tracking-tighter mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40">
-            Outreach AI
-          </h1>
-          
-          <div className="max-w-2xl w-full mt-8 p-8 rounded-3xl bg-black/40 border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50" />
-            <div className="text-left font-mono text-neutral-400 text-sm md:text-base min-h-[80px]">
-                <span className="text-emerald-500 mr-2">$</span>
-                <span className="text-white">initializing_engine...</span>
-                <br />
-                <span className="text-emerald-500 mr-2">{'>'}</span>
-                <span className="text-neutral-300">
-                    <Typewriter
-                        options={{
-                            strings: [
-                                "Generating high-conversion LinkedIn DMs...",
-                                "Drafting professional cold emails...",
-                                "Creating WhatsApp business messages...",
-                                "Analyzing tone and sentiment...",
-                                "Optimizing for maximum reply rates..."
-                            ],
-                            autoStart: true,
-                            loop: true,
-                            delay: 40,
-                            deleteSpeed: 20,
-                        }}
-                    />
-                </span>
+          <div className="w-full max-w-5xl flex flex-col items-center relative z-10">
+            <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <Terminal className="w-8 h-8 text-emerald-400" />
+            </div>
+
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tighter mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40 text-center drop-shadow-2xl">
+              Outreach AI
+            </h1>
+            
+            {/* The typewriter is kept inside a sleek, dark terminal-like container */}
+            <div className="max-w-2xl w-full p-8 rounded-[2rem] bg-[#0a0a0a]/80 border border-white/5 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent opacity-50" />
+              <div className="text-left font-mono text-neutral-400 text-sm md:text-base min-h-[80px]">
+                  <span className="text-emerald-500 mr-2">$</span>
+                  <span className="text-white">initializing_engine...</span>
+                  <br />
+                  <span className="text-emerald-500 mr-2">{'>'}</span>
+                  <span className="text-neutral-300">
+                      <Typewriter
+                          strings={[
+                              "Generating high-conversion LinkedIn DMs...",
+                              "Drafting professional cold emails...",
+                              "Creating WhatsApp business messages...",
+                              "Analyzing tone and sentiment...",
+                              "Optimizing for maximum reply rates..."
+                          ]}
+                      />
+                  </span>
+              </div>
             </div>
           </div>
 
           <motion.div 
-             className="absolute bottom-12 cursor-pointer"
+             className="absolute bottom-12 cursor-pointer z-10"
              animate={{ y: [0, 10, 0] }} 
              transition={{ repeat: Infinity, duration: 2 }}
              onClick={() => inputRef.current?.scrollIntoView({ behavior: 'smooth' })}
@@ -157,6 +314,7 @@ const App: React.FC = () => {
           </motion.div>
         </motion.div>
 
+        {/* INPUT SECTION */}
         <div ref={inputRef} className="min-h-screen flex items-center justify-center w-full p-4">
             <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -214,29 +372,9 @@ const App: React.FC = () => {
             </motion.div>
         </div>
 
+        {/* OUTPUT SECTION */}
         {(Object.keys(results).length > 0 || loading) && (
             <div ref={resultsRef} className="min-h-screen flex flex-col justify-center w-full max-w-7xl mx-auto px-6 py-20">
-            <AnimatePresence>
-                {contextMatch && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="fixed top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-lg px-4"
-                    >
-                        <div className="bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-xl p-4 rounded-2xl flex items-center gap-4 shadow-2xl shadow-emerald-500/10">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                                <BrainCircuit className="text-emerald-400 w-5 h-5" />
-                            </div>
-                            <div>
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Local Pattern Match Active</h4>
-                                <p className="text-xs text-neutral-300 leading-tight">Optimizing outreach using patterns from your local history. All processing remains on-device.</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             <AnimatePresence>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
@@ -328,14 +466,14 @@ const App: React.FC = () => {
             </div>
         )}
 
-        <footer className="w-full py-12 border-t border-white/5 mt-auto bg-black/20 backdrop-blur-lg">
+        <footer className="w-full py-12 border-t border-white/5 mt-auto bg-black/20 backdrop-blur-lg z-10 relative">
             <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    <span>System_Status: Live</span>
+                    <span>System_Status: Online</span>
                 </div>
                 <div>
-                    PICT Revelation 2K26 • Team Name: Synexis
+                    PICT Revelation 2K26 • Team Code: 404
                 </div>
                 <div>
                     Local_Engine: Llama 3.2
@@ -344,8 +482,10 @@ const App: React.FC = () => {
         </footer>
 
       </div>
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </BackgroundPaths>
   );
-};
-
-export default App;
+}
