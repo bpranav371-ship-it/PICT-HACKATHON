@@ -470,10 +470,10 @@ export default function App() {
             <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-600">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    <span>System_Status: Online</span>
+                    <span>System_Status: Live</span>
                 </div>
                 <div>
-                    PICT Revelation 2K26 • Team Code: 404
+                    XENIA • Team Name : SYNEXIS
                 </div>
                 <div>
                     Local_Engine: Llama 3.2
